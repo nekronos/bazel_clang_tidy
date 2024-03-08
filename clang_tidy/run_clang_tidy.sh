@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Usage: run_clang_tidy <OUTPUT> <CONFIG> [ARGS...]
+# Usage: run_clang_tidy <LOG_FILE> <OUTPUT> <CONFIG> [ARGS...]
 set -ue
 
 CLANG_TIDY_BIN=$1
+shift
+
+LOG_FILE=$1
 shift
 
 OUTPUT=$1
@@ -10,6 +13,10 @@ shift
 
 CONFIG=$1
 shift
+
+
+touch $LOG_FILE
+truncate -s 0 $LOG_FILE
 
 # clang-tidy doesn't create a patchfile if there are no errors.
 # make sure the output exists, and empty if there are no errors,
@@ -20,10 +27,6 @@ truncate -s 0 $OUTPUT
 # if $CONFIG is provided by some external workspace, we need to
 # place it in the current directory
 test -e .clang-tidy || ln -s -f $CONFIG .clang-tidy
-
-# Print output on failure only
-logfile="$(mktemp)"
-trap 'if (($?)); then cat "$logfile" 1>&2; fi; rm "$logfile"' EXIT
 
 # Prepend a flag-based disabling of a check that has a serious bug in
 # clang-tidy 16 when used with C++20. Bazel always violates this check and the
@@ -37,4 +40,4 @@ set -- \
   --warnings-as-errors=-clang-diagnostic-builtin-macro-redefined \
    "$@"
 
-"${CLANG_TIDY_BIN}" "$@" >"$logfile" 2>&1
+"${CLANG_TIDY_BIN}" "$@" >"$LOG_FILE" 2>&1

@@ -33,6 +33,12 @@ def _run_tidy(
     else:
         args.add(exe.files_to_run.executable)
 
+    logfile = ctx.actions.declare_file(
+        "bazel_clang_tidy_" + infile.path + "." + discriminator + ".clang-tidy.log",
+    )
+
+    args.add(logfile.path)
+
     args.add(outfile.path)  # this is consumed by the wrapper script
 
     args.add(config.path)
@@ -68,14 +74,14 @@ def _run_tidy(
 
     ctx.actions.run(
         inputs = inputs,
-        outputs = [outfile],
+        outputs = [outfile, logfile],
         executable = wrapper,
         arguments = [args],
         mnemonic = "ClangTidy",
         use_default_shell_env = True,
         progress_message = "Run clang-tidy on {}".format(infile.short_path),
     )
-    return outfile
+    return [outfile, logfile]
 
 def _rule_sources(ctx):
     def check_valid_file_type(src):
@@ -173,6 +179,7 @@ def _clang_tidy_aspect_impl(target, ctx):
         )
         for src in srcs
     ]
+    outputs = [item for sublist in outputs for item in sublist]
 
     return [
         OutputGroupInfo(report = depset(direct = outputs)),
