@@ -29,7 +29,7 @@ def _run_tidy(
 
     # this is consumed by the wrapper script
     if len(exe.files.to_list()) == 0:
-        args.add("clang-tidy")
+        args.add("clang-tidy-17")
     else:
         args.add(exe.files_to_run.executable)
 
